@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "cooking"
+version = "0.1.0"
+description = ""
+authors = ["дмитрий <shuckiy73@yandex.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+django = "^5.1.2"
+django-jazzmin = "^3.0.1"
+pillow = "^10.4.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

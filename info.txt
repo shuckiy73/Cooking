@@ -1,0 +1,18 @@
+pip install django
+#создание requirements.txt
+pip freeze >requirements.txt 
+django-admin startproject config ./
+python manage.py startapp cooking
+pip install django-jazzmin
+
+
+
+
+
+
+poetry init  
+poetry install
+poetry update
+poetry add -r requirements.txt
+poetry show
+poetry run python manage.py ........(migrate, createsuperuser,runserver)
