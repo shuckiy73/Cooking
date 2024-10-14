@@ -13,6 +13,6 @@ pip install django-jazzmin
 poetry init  
 poetry install
 poetry update
-poetry add -r requirements.txt
+poetry add .....
 poetry show
 poetry run python manage.py ........(migrate, createsuperuser,runserver)
