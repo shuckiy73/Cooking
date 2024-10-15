@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Category, Post
+from django.db.models import F
 
 
 def index(request):
@@ -28,8 +29,11 @@ def category_list(request, pk):
 def post_detail(request, pk):
     """Страница статьи"""
     article = get_object_or_404(Post, pk=pk)
+    Post.objects.filter(pk=pk).update(watched=F('watched') + 1 )
+    ext_post = Post.objects.all().order_by('-watched')[:5]
     context = {
         'title': article.title,
-        'post': article
+        'post': article,
+        'ext_posts': ext_post
     }
     return render(request, 'cooking/article_detail.html', context)
