@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Category, Post
 from django.db.models import F
+from .forms import PostAddForm
 
 
 def index(request):
@@ -37,3 +38,17 @@ def post_detail(request, pk):
         'ext_posts': ext_post
     }
     return render(request, 'cooking/article_detail.html', context)
+
+
+def add_post(request):
+    """Добавление статьи без админки"""
+    if request.method == 'POST':
+        pass
+    else:
+        form = PostAddForm()
+
+    context = {
+        'form': form,
+        'title': 'Добавить статью'
+    }
+    return render(request, 'cooking/article_add_form.html', context)
