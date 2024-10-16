@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import Category, Post
 from django.db.models import F
 from .forms import PostAddForm
@@ -43,7 +43,10 @@ def post_detail(request, pk):
 def add_post(request):
     """Добавление статьи без админки"""
     if request.method == 'POST':
-        pass
+        form = PostAddForm(request.POST, request.FILES)
+        if form.is_valid():
+            post = form.save()  # Создание и сохранение объекта Post
+            return redirect('post_detail', pk=post.pk)  # Перенаправление на страницу созданной статьи
     else:
         form = PostAddForm()
 
