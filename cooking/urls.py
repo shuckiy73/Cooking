@@ -8,5 +8,7 @@ urlpatterns = [
     path('post/<int:pk>/', post_detail, name='post_detail'),
     path('add_article/', add_post, name='add'),
     path('login/', user_login, name='login'),
-    path('logout/', user_logout, name='logout')
+    path('logout/', user_logout, name='logout'),
+    path('register/', register, name='register'),
+
 ]
