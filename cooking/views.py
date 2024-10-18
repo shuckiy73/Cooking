@@ -3,39 +3,72 @@ from .models import Category, Post
 from django.db.models import F
 from .forms import PostAddForm, LoginForm, RegistrationForm
 from django.contrib.auth import login, logout
+from django.contrib import messages
+from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 
-def index(request):
-    """Для главной страницы"""
-    posts = Post.objects.all()  ##SELECT * FROM post
-    
-    context = {
-        'title': 'Главная страница',
-        'posts': posts,
-    }
-    return render(request, 'cooking/index.html', context)
+class Index(ListView):
+    model = Post
+    context_object_name = 'posts'
+    template_name = 'cooking/index.html'
+    extra_context = {'title': 'Главная страница'}
 
-def category_list(request, pk):
-    """Реакция на нажатие кнопки"""
-    category = get_object_or_404(Category, pk=pk)
-    posts = Post.objects.filter(category=category)  
+# def category_list(request, pk):
+#     """Реакция на нажатие кнопки"""
+#     category = get_object_or_404(Category, pk=pk)
+#     posts = Post.objects.filter(category=category)  
    
-    context = {
-        'title': category.title,
-        'posts': posts,
-    }
-    return render(request, 'cooking/index.html', context)
+#     context = {
+#         'title': category.title,  # Используем поле title для названия категории
+#         'posts': posts,
+#     }
+#     return render(request, 'cooking/index.html', context)
 
-def post_detail(request, pk):
+class ArticleByCategory(Index):
+   """Реакция на нажатие кнопки"""
+   def get_queryset(self):
+    """Здесь можно изменить фильтрацию"""
+    return Post.objects.filter(category_id=self.kwargs['pk'], is_published=True)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        """Для динамических данных"""
+        context = super().get_context_data() ###context[] ={}
+        category = Category.objects.get(pk=self.kwargs['pk'])
+        context['title'] = category.title
+        return context
+
+
+# def post_detail(request, pk):
+#     """Страница статьи"""
+#     article = get_object_or_404(Post, pk=pk)
+#     article.watched = F('watched') + 1  # Обновляем счетчик просмотров
+#     article.save()
+#     ext_post = Post.objects.exclude(pk=pk).order_by('-watched')[:5]
+#     context = {
+#         'title': article.title,
+#         'post': article,
+#         'ext_posts': ext_post
+#     }
+#     return render(request, 'cooking/article_detail.html', context)
+
+class PostDetail(DetailView):
     """Страница статьи"""
-    article = get_object_or_404(Post, pk=pk)
-    Post.objects.filter(pk=pk).update(watched=F('watched') + 1 )
-    ext_post = Post.objects.all().order_by('-watched')[:5]
-    context = {
-        'title': article.title,
-        'post': article,
-        'ext_posts': ext_post
-    }
-    return render(request, 'cooking/article_detail.html', context)
+    model = Post
+    template_name = 'cooking/article_detail.html'
+
+    def get_queryset(self):
+        """Здесь можно делать доп.фильтрацию"""
+        return Post.objects.filter(pk=self.kwargs['pk'])
+
+        def get_context_data(self, **kwargs):
+            """Для динамических данных"""
+            Post.objects.filter(pk=self.kwargs['pk']).update(watched=F('watched') + 1)
+            context = super().get_contxt_data()
+            post = Post.objects.get(pk=self.kwargs['pk'])
+            posts = Post.objects.exclude(pk=self.kwargs['pk']).order_by('-watched')[:5]
+            context['title'] = post.title
+            context['ext_posts'] = posts
+            return context
+
 
 def add_post(request):
     """Добавление статьи без админки"""
@@ -59,8 +92,12 @@ def user_login(request):
         form = LoginForm(data=request.POST)
         if form.is_valid():
             user = form.get_user()
-            login(request, user)
-            return redirect('index')
+            if user is not None and user.is_active:
+                login(request, user)
+                messages.success(request, 'Вы успешно вошли в аккаунт')
+                return redirect('index')
+            else:
+                messages.error(request, 'Неверный логин или пароль')
     else:
         form = LoginForm()
 
@@ -82,7 +119,7 @@ def register(request):
         form = RegistrationForm(data=request.POST)
         if form.is_valid():
             form.save()
-            return redirect('login')
+            return redirect('login')  # Перенаправление на страницу входа после регистрации
     else:
         form = RegistrationForm()
 
