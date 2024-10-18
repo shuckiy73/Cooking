@@ -3,9 +3,12 @@ from .views import *
 
 
 urlpatterns = [
-    path('', index, name='index'),
-    path('category/<int:pk>/', category_list, name='category_list'),
-    path('post/<int:pk>/', post_detail, name='post_detail'),
+    # path('', index, name='index'),
+    path('', Index.as_view(), name='index'),
+    # path('category/<int:pk>/', category_list, name='category_list'),
+    path('category/<int:pk>/', ArticleByCategory.as_view(), name='category_list'),
+    # path('post/<int:pk>/', post_detail, name='post_detail'),
+    path('post/<int:pk>/', PostDetail.as_view(), name='post_detail'),
     path('add_article/', add_post, name='add'),
     path('login/', user_login, name='login'),
     path('logout/', user_logout, name='logout'),
