@@ -1,90 +1,115 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Category, Post
-from django.db.models import F
-from .forms import PostAddForm, LoginForm, RegistrationForm
+from .models import Category, Post, Comment
+from django.db.models import F, Q
+from .forms import PostAddForm, LoginForm, RegistrationForm, CommentForm
 from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
+from django.urls import reverse_lazy
+from django.contrib.auth.models import User
+
 
 class Index(ListView):
+    """Главная страница с постами"""
     model = Post
     context_object_name = 'posts'
     template_name = 'cooking/index.html'
     extra_context = {'title': 'Главная страница'}
 
-# def category_list(request, pk):
-#     """Реакция на нажатие кнопки"""
-#     category = get_object_or_404(Category, pk=pk)
-#     posts = Post.objects.filter(category=category)  
-   
-#     context = {
-#         'title': category.title,  # Используем поле title для названия категории
-#         'posts': posts,
-#     }
-#     return render(request, 'cooking/index.html', context)
 
 class ArticleByCategory(Index):
-   """Реакция на нажатие кнопки"""
-   def get_queryset(self):
-    """Здесь можно изменить фильтрацию"""
-    return Post.objects.filter(category_id=self.kwargs['pk'], is_published=True)
+    """Реакция на нажатие кнопки категории"""
+    def get_queryset(self):
+        """Фильтрация постов по категории"""
+        return Post.objects.filter(category_id=self.kwargs['pk'], is_published=True)
 
-    def get_context_data(self, *, object_list=None, **kwargs):
-        """Для динамических данных"""
-        context = super().get_context_data() ###context[] ={}
+    def get_context_data(self, **kwargs):
+        """Добавление динамических данных в контекст"""
+        context = super().get_context_data(**kwargs)
         category = Category.objects.get(pk=self.kwargs['pk'])
         context['title'] = category.title
         return context
 
 
-# def post_detail(request, pk):
-#     """Страница статьи"""
-#     article = get_object_or_404(Post, pk=pk)
-#     article.watched = F('watched') + 1  # Обновляем счетчик просмотров
-#     article.save()
-#     ext_post = Post.objects.exclude(pk=pk).order_by('-watched')[:5]
-#     context = {
-#         'title': article.title,
-#         'post': article,
-#         'ext_posts': ext_post
-#     }
-#     return render(request, 'cooking/article_detail.html', context)
-
 class PostDetail(DetailView):
-    """Страница статьи"""
+    """Страница деталей статьи"""
     model = Post
     template_name = 'cooking/article_detail.html'
+    context_object_name = 'post'
 
-    def get_queryset(self):
-        """Здесь можно делать доп.фильтрацию"""
-        return Post.objects.filter(pk=self.kwargs['pk'])
-
-        def get_context_data(self, **kwargs):
-            """Для динамических данных"""
-            Post.objects.filter(pk=self.kwargs['pk']).update(watched=F('watched') + 1)
-            context = super().get_contxt_data()
-            post = Post.objects.get(pk=self.kwargs['pk'])
-            posts = Post.objects.exclude(pk=self.kwargs['pk']).order_by('-watched')[:5]
-            context['title'] = post.title
-            context['ext_posts'] = posts
-            return context
+    def get_context_data(self, **kwargs):
+        """Добавление динамических данных в контекст"""
+        context = super().get_context_data(**kwargs)
+        Post.objects.filter(pk=self.kwargs['pk']).update(watched=F('watched') + 1)
+        post = context['post']
+        context['title'] = post.title
+        context['ext_posts'] = Post.objects.exclude(pk=self.kwargs['pk']).order_by('-watched')[:5]
+        context['comments'] = Comment.objects.filter(post=post)
+        if self.request.user.is_authenticated:
+            context['comment_form'] = CommentForm()
+        return context
 
 
-def add_post(request):
+class AddPost(CreateView):
     """Добавление статьи без админки"""
+    form_class = PostAddForm
+    template_name = 'cooking/article_add_form.html'
+    extra_context = {'title': 'Добавить статью'}
+    success_url = reverse_lazy('index')
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+
+class PostUpdate(UpdateView):
+    """Изменение статьи по кнопке"""
+    model = Post
+    form_class = PostAddForm
+    template_name = 'cooking/article_add_form.html'
+    success_url = reverse_lazy('index')
+
+
+class PostDelete(DeleteView):
+    """Удаление статьи"""
+    model = Post
+    success_url = reverse_lazy('index')
+    context_object_name = 'post'
+    extra_context = {'title': 'Изменить статью'}
+
+
+class SearchResult(Index):
+    """Поиск слова в заголовках или в содержании статей"""
+    def get_queryset(self):
+        """Фильтрация постов по поисковому запросу"""
+        word = self.request.GET.get('q')
+        posts = Post.objects.filter(
+            Q(title__icontains=word) | Q(content__icontains=word)
+        )
+        return posts
+
+
+def add_comment(request, post_id):
+    """Добавление комментария к статье"""
+    post = get_object_or_404(Post, pk=post_id)
     if request.method == 'POST':
-        form = PostAddForm(request.POST, request.FILES)
+        form = CommentForm(data=request.POST)
         if form.is_valid():
-            post = form.save()  # Создание и сохранение объекта Post
-            return redirect('post_detail', pk=post.pk)  # Перенаправление на страницу созданной статьи
+            comment = form.save(commit=False)
+            comment.user = request.user
+            comment.post = post
+            comment.save()
+            messages.success(request, 'Ваш комментарий успешно добавлен')
+            return redirect('post_detail', post_id)
     else:
-        form = PostAddForm()
+        form = CommentForm()
 
     context = {
+        'post': post,
         'form': form,
-        'title': 'Добавить статью'
     }
-    return render(request, 'cooking/article_add_form.html', context)
+    return render(request, 'cooking/add_comment.html', context)
+
 
 def user_login(request):
     """Аутентификация пользователя"""
@@ -108,10 +133,12 @@ def user_login(request):
 
     return render(request, 'cooking/login_form.html', context)
 
+
 def user_logout(request):
     """Выход пользователя"""
     logout(request)
     return redirect('index')
+
 
 def register(request):
     """Регистрация пользователя"""
@@ -129,3 +156,14 @@ def register(request):
     }
 
     return render(request, 'cooking/register_form.html', context)
+
+
+def profile(request, user_id):
+    """Страница пользователя"""
+    user = get_object_or_404(User, pk=user_id)
+    posts = Post.objects.filter(author=user)
+    context = {
+        'user': user,
+        'posts': posts
+    }
+    return render(request, 'cooking/profile.html', context)
