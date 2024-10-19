@@ -5,6 +5,8 @@ from .forms import PostAddForm, LoginForm, RegistrationForm
 from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
+from django.urls import reverse_lazy
+
 
 class Index(ListView):
     model = Post
@@ -12,79 +14,59 @@ class Index(ListView):
     template_name = 'cooking/index.html'
     extra_context = {'title': 'Главная страница'}
 
-# def category_list(request, pk):
-#     """Реакция на нажатие кнопки"""
-#     category = get_object_or_404(Category, pk=pk)
-#     posts = Post.objects.filter(category=category)  
-   
-#     context = {
-#         'title': category.title,  # Используем поле title для названия категории
-#         'posts': posts,
-#     }
-#     return render(request, 'cooking/index.html', context)
 
 class ArticleByCategory(Index):
-   """Реакция на нажатие кнопки"""
-   def get_queryset(self):
-    """Здесь можно изменить фильтрацию"""
-    return Post.objects.filter(category_id=self.kwargs['pk'], is_published=True)
+    """Реакция на нажатие кнопки"""
+    def get_queryset(self):
+        """Здесь можно изменить фильтрацию"""
+        return Post.objects.filter(category_id=self.kwargs['pk'], is_published=True)
 
-    def get_context_data(self, *, object_list=None, **kwargs):
+    def get_context_data(self, **kwargs):
         """Для динамических данных"""
-        context = super().get_context_data() ###context[] ={}
+        context = super().get_context_data(**kwargs)
         category = Category.objects.get(pk=self.kwargs['pk'])
         context['title'] = category.title
         return context
 
 
-# def post_detail(request, pk):
-#     """Страница статьи"""
-#     article = get_object_or_404(Post, pk=pk)
-#     article.watched = F('watched') + 1  # Обновляем счетчик просмотров
-#     article.save()
-#     ext_post = Post.objects.exclude(pk=pk).order_by('-watched')[:5]
-#     context = {
-#         'title': article.title,
-#         'post': article,
-#         'ext_posts': ext_post
-#     }
-#     return render(request, 'cooking/article_detail.html', context)
-
 class PostDetail(DetailView):
     """Страница статьи"""
     model = Post
     template_name = 'cooking/article_detail.html'
+    context_object_name = 'post'
 
-    def get_queryset(self):
-        """Здесь можно делать доп.фильтрацию"""
-        return Post.objects.filter(pk=self.kwargs['pk'])
-
-        def get_context_data(self, **kwargs):
-            """Для динамических данных"""
-            Post.objects.filter(pk=self.kwargs['pk']).update(watched=F('watched') + 1)
-            context = super().get_contxt_data()
-            post = Post.objects.get(pk=self.kwargs['pk'])
-            posts = Post.objects.exclude(pk=self.kwargs['pk']).order_by('-watched')[:5]
-            context['title'] = post.title
-            context['ext_posts'] = posts
-            return context
+    def get_context_data(self, **kwargs):
+        """Для динамических данных"""
+        context = super().get_context_data(**kwargs)
+        Post.objects.filter(pk=self.kwargs['pk']).update(watched=F('watched') + 1)
+        post = context['post']
+        context['title'] = post.title
+        context['ext_posts'] = Post.objects.exclude(pk=self.kwargs['pk']).order_by('-watched')[:5]
+        return context
 
 
-def add_post(request):
+class AddPost(CreateView):
     """Добавление статьи без админки"""
-    if request.method == 'POST':
-        form = PostAddForm(request.POST, request.FILES)
-        if form.is_valid():
-            post = form.save()  # Создание и сохранение объекта Post
-            return redirect('post_detail', pk=post.pk)  # Перенаправление на страницу созданной статьи
-    else:
-        form = PostAddForm()
+    form_class = PostAddForm
+    template_name = 'cooking/article_add_form.html'
+    extra_context = {'title': 'Добавить статью'}
+    success_url = reverse_lazy('index')
 
-    context = {
-        'form': form,
-        'title': 'Добавить статью'
-    }
-    return render(request, 'cooking/article_add_form.html', context)
+
+class PostUpdate(UpdateView):
+    """Изменение статьи по кнопке"""
+    model = Post
+    form_class = PostAddForm
+    template_name = 'cooking/article_add_form.html'
+    success_url = reverse_lazy('index')
+
+
+class PostDelete(DeleteView):
+    """Удаление статьи"""
+    model = Post
+    success_url = reverse_lazy('index')
+    context_object_name = 'post'
+
 
 def user_login(request):
     """Аутентификация пользователя"""
@@ -108,10 +90,12 @@ def user_login(request):
 
     return render(request, 'cooking/login_form.html', context)
 
+
 def user_logout(request):
     """Выход пользователя"""
     logout(request)
     return redirect('index')
+
 
 def register(request):
     """Регистрация пользователя"""
