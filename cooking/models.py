@@ -3,16 +3,16 @@ from django.urls import reverse
 
 
 class Category(models.Model):
-    """категория новостей"""
+    """Категория новостей"""
     title = models.CharField(max_length=255, verbose_name='Название категории')
 
     def __str__(self):
+        """Возвращает строковое представление объекта"""
         return self.title
 
-
     def get_absolute_url(self):
+        """Возвращает URL для просмотра деталей категории"""
         return reverse('category_list', kwargs={'pk': self.pk})
-
 
     class Meta:
         verbose_name = 'Категория'
@@ -20,7 +20,7 @@ class Category(models.Model):
 
 
 class Post(models.Model):
-    """для новостных постов"""
+    """Для новостных постов"""
     title = models.CharField(max_length=255, verbose_name='Заголовок статьи')
     content = models.TextField(default='Скоро тут будет статья ....', verbose_name='Текст статьи')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
@@ -31,10 +31,11 @@ class Post(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='Категория')
 
     def __str__(self):
+        """Возвращает строковое представление объекта"""
         return self.title
 
-    
     def get_absolute_url(self):
+        """Возвращает URL для просмотра деталей статьи"""
         return reverse('post_detail', kwargs={'pk': self.pk})
 
     class Meta:
