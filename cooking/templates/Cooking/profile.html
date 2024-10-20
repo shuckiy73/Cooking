@@ -103,11 +103,11 @@
                         <div class="d-flex justify-content-between">
                             <div>Просмотры: {{ post.watched }}</div>
                             <div>
-                                <a href="{% url 'post_update' post.pk %}" class="btn btn-light"><i class="fa-solid fa-pen-to-square fs-5"></i></a>
+                                <a href="{% url 'post_update' post.pk %}" class="btn btn-light"><i class="fa-solid fa-pen-to-square fs-5"></i>Изменить</a>
                             </div>
                             <div>
                                 <a href="{% url 'post_delete' post.pk %}" class="btn btn-light">
-                                    <i class="fa-solid fa-xmark fs-5"></i>
+                                    <i class="fa-solid fa-xmark fs-5">Удалить</i>
                                 </a>
                             </div>
                         </div>
