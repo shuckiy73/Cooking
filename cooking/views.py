@@ -189,7 +189,7 @@ class CookingAPIDetail(RetrieveAPIView):
         """Выдача статьи по API"""
         queryset = Post.objects.filter(is_published=True)
         serializer_class = PostSerializer
-        pernissions.classes = (IsAutheticated,)
+        permission_classes = (IsAuthenticated,)
 
 
 class CookingCategoryAPI(ListAPIView):
