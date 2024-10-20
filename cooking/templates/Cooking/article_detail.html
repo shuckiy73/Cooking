@@ -26,7 +26,11 @@
             </div>
             <div class="card-footer d-flex justify-content-between">
                 <p class="card-text">{{ post.created_at|date:"d.m.Y H:i" }}</p>
-                <a href="{% url 'profile' post.author.pk %}">Автор статьи: {{ post.author }}</a>
+                {% if post.author.pk %}
+                    <a href="{% url 'profile' post.author.pk %}">Автор статьи: {{ post.author }}</a>
+                {% else %}
+                    <p>Автор статьи: Неизвестный автор</p>
+                {% endif %}
                 <p class="card-text">{{ post.watched }}</p>
             </div>
         </div>
