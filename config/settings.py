@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "cooking.apps.CookingConfig",
     'rest_framework',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
