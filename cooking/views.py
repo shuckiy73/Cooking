@@ -11,6 +11,8 @@ from django.contrib.auth.views import PasswordChangeView
 from .serializers import PostSerializer, CategorySerializer
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
+from django.views.generic import TemplateView
+
 
 class UserChangePassword(PasswordChangeView):
     """Простой способ смены пароля"""
@@ -204,4 +206,9 @@ class CookingCategoryAPIDetail(RetrieveAPIView):
         serializer_class = CategorySerializer
 
 
-
+class SwaggerApiDoc(TemplateView):
+    """Документация API"""
+    template_name = 'swagger/swagger_ui.html'
+    extra_context = {
+        'schema_url': 'openapi-schema'
+    }
