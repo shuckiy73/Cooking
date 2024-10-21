@@ -1,25 +1,27 @@
-from django.urls import path
+from django.urls import path, re_path
+from django.views.generic import TemplateView
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+from django.views.decorators.cache import cache_page
 from .views import (
     Index, ArticleByCategory, PostDetail, AddPost, PostUpdate, PostDelete,
     SearchResult, user_login, user_logout, register, add_comment, profile,
-    UserChangePassword, CookingAPI, CookingAPIDetail, CookingCategoryAPI, CookingCategoryAPIDetail  # Добавьте импорт CookingCategoryAPI и CookingCategoryAPIDetail
+    UserChangePassword, CookingAPI, CookingAPIDetail, CookingCategoryAPI, CookingCategoryAPIDetail
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView,
 )
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-from rest_framework import permissions
 
 schema_view = get_schema_view(
    openapi.Info(
       title="Snippets API",
       default_version='v1',
-      description="Test description",
-      terms_of_service="https://www.google.com/policies/terms/",
-      contact=openapi.Contact(email="contact@snippets.local"),
+      description="Документация по API",
+      terms_of_service="http://www.google.com/policies/terms/",
+      contact=openapi.Contact(email="shuckiy73@gmail.com"),
       license=openapi.License(name="BSD License"),
    ),
    public=True,
@@ -29,6 +31,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     # Главная страница
     path('', Index.as_view(), name='index'),
+    # path('', cache_page(60 * 15)(Index.as_view()), name='index'),  # Исправлена опечатка
 
     # Список статей по категории
     path('category/<int:pk>/', ArticleByCategory.as_view(), name='category_list'),
@@ -68,12 +71,13 @@ urlpatterns = [
 
     # API для статей
     path('posts/api/', CookingAPI.as_view(), name='CookingAPI'),
-    path('posts/api/<int:pk>/', CookingAPIDetail.as_view(), name='CookingAPIDetail'),  # Исправленный путь
+    path('posts/api/<int:pk>/', CookingAPIDetail.as_view(), name='CookingAPIDetail'),
 
     # API для категорий
     path('categories/api/', CookingCategoryAPI.as_view(), name='CookingCategoryAPI'),
     path('categories/api/<int:pk>/', CookingCategoryAPIDetail.as_view(), name='CookingCategoryAPIDetail'),
 
+    # JWT токены
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
@@ -82,4 +86,15 @@ urlpatterns = [
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+
+    # Swagger UI
+    path(
+        "swagger-ui/",
+        TemplateView.as_view(
+            template_name="swagger-ui.html",
+            extra_context={"schema_url": "openapi-schema"},
+        ),
+        name="swagger-ui",
+    ),
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=1), name='schema-json'),
 ]
