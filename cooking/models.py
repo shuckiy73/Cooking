@@ -31,6 +31,7 @@ class Post(models.Model):
     is_published = models.BooleanField(default=True, verbose_name='Публикация')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='Категория', related_name='posts')
     author = models.ForeignKey(User, default=None, null=True, blank=True, on_delete=models.CASCADE)
+    tags = models.ManyToManyField('Tag', blank=True, verbose_name='Теги')
 
     def __str__(self):
         """Возвращает строковое представление объекта"""
@@ -59,3 +60,13 @@ class Comment(models.Model):
     class Meta:
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
+        
+class Tag(models.Model):
+    name = models.CharField(max_length=50, verbose_name='Название тега')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
